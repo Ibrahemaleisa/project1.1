@@ -3,338 +3,471 @@
 
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
-  const root = document.documentElement;
+  const html = document.documentElement;
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const fmt = new Intl.NumberFormat("en-US");
+  const pct = (x) => (x * 100).toFixed(1) + "%";
 
-  root.classList.remove("no-js");
+  html.classList.remove("no-js");
 
   const store = {
     get(key) { try { return localStorage.getItem(key); } catch { return null; } },
     set(key, value) { try { localStorage.setItem(key, value); } catch { /* storage unavailable */ } },
   };
 
-  /* ---------- Theme ---------- */
+  /* =======================================================
+     Theme + grid overlay
+     ======================================================= */
   const darkQuery = matchMedia("(prefers-color-scheme: dark)");
-  function applyTheme(theme) {
-    if (theme) root.dataset.theme = theme;
-    const mode = theme || (darkQuery.matches ? "dark" : "light");
-    root.dataset.mode = mode;
-    $("#themeToggle").setAttribute("aria-pressed", String(mode === "dark"));
+  const isDark = () => (html.dataset.theme || (darkQuery.matches ? "dark" : "light")) === "dark";
+
+  function syncThemeButton() {
+    const btn = $("#themeToggle");
+    btn.textContent = isDark() ? "Light" : "Dark";
+    btn.setAttribute("aria-label", `Switch to ${isDark() ? "light" : "dark"} mode`);
   }
-  applyTheme(store.get("theme"));
-  darkQuery.addEventListener("change", () => applyTheme(root.dataset.theme));
+  if (store.get("theme")) html.dataset.theme = store.get("theme");
+  syncThemeButton();
+  darkQuery.addEventListener("change", () => { syncThemeButton(); renderRamp(); });
   $("#themeToggle").addEventListener("click", () => {
-    const next = root.dataset.mode === "dark" ? "light" : "dark";
-    store.set("theme", next);
-    applyTheme(next);
+    html.dataset.theme = isDark() ? "light" : "dark";
+    store.set("theme", html.dataset.theme);
+    syncThemeButton();
+    renderRamp();
   });
 
-  /* ---------- Typed code sample ---------- */
-  const codeLines = [
-    ["c", "/* One hue drives the whole theme */"],
-    ["k", ":root {"],
-    ["", "  --hue: "], ["v", "250"], ["", ";\n"],
-    ["", "  --accent: "], ["v", "oklch(0.56 0.19 var(--hue))"], ["", ";\n"],
-    ["", "  --radius: "], ["v", "14px"], ["", ";\n"],
-    ["", "  --space: "], ["v", "1"], ["", ";\n"],
-    ["k", "}"],
-    ["", "\n"],
-    ["k", ".btn--primary {"],
-    ["", "  background: "], ["v", "var(--accent)"], ["", ";\n"],
-    ["", "  border-radius: "], ["v", "calc(var(--radius) * .75)"], ["", ";\n"],
-    ["k", "}"],
-  ];
-  // Lines that close a statement get a trailing newline.
-  const tokens = codeLines.map(([cls, text]) =>
-    [cls, /[{}]$|\*\/$/.test(text) ? text + "\n" : text]);
+  const gridBtn = $("#gridToggle");
+  function toggleGrid() {
+    const on = html.classList.toggle("show-grid");
+    gridBtn.setAttribute("aria-pressed", String(on));
+  }
+  gridBtn.addEventListener("click", toggleGrid);
+  addEventListener("keydown", (e) => {
+    if (e.key.toLowerCase() !== "g" || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.target.closest("input, textarea, [contenteditable]")) return;
+    toggleGrid();
+  });
 
-  const typed = $("#typed");
-  function renderTyped(chars) {
-    typed.textContent = "";
-    let left = chars;
-    for (const [cls, text] of tokens) {
-      if (left <= 0) break;
-      const part = text.slice(0, left);
-      left -= part.length;
-      const span = document.createElement("span");
-      if (cls) span.className = cls;
-      span.textContent = part;
-      typed.append(span);
+  /* =======================================================
+     00 Wordmark: letters swell toward the cursor
+     ======================================================= */
+  const hero = $(".hero");
+  const letters = $$(".wordmark span");
+  const state = letters.map(() => ({ t: 0, target: 0 }));
+  let pointer = null;           // {x, y} while the cursor is over the hero
+  let introStart = performance.now();
+  const canHover = matchMedia("(hover: hover)").matches;
+
+  function setTargets(now) {
+    if (pointer) {
+      const radius = Math.max(innerWidth * 0.16, 140);
+      letters.forEach((el, i) => {
+        const r = el.getBoundingClientRect();
+        const dx = pointer.x - (r.left + r.width / 2);
+        const dy = Math.max(0, Math.abs(pointer.y - (r.top + r.height / 2)) - r.height / 2);
+        const d = Math.hypot(dx, dy);
+        state[i].target = Math.max(0, 1 - d / radius) ** 1.4;
+      });
+      return;
+    }
+    const elapsed = (now - introStart) / 1000;
+    if (!canHover || elapsed < 2.4) {
+      // A slow wave travels through the word: the intro on desktop, the idle state on touch.
+      const phase = elapsed * 2.2;
+      letters.forEach((_, i) => {
+        const wave = Math.sin(phase - i * 0.55);
+        state[i].target = canHover ? Math.max(0, wave) * Math.max(0, 1 - elapsed / 2.4) : 0.85 * Math.max(0, wave) ** 6;
+      });
+    } else {
+      state.forEach((s) => { s.target = 0; });
     }
   }
-  const totalChars = tokens.reduce((n, [, t]) => n + t.length, 0);
+
+  function frame(now) {
+    setTargets(now);
+    for (let i = 0; i < letters.length; i++) {
+      const s = state[i];
+      s.t += (s.target - s.t) * 0.14;
+      if (Math.abs(s.target - s.t) < 0.001) s.t = s.target;
+      letters[i].style.setProperty("--t", s.t.toFixed(3));
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // Size the word so that, at rest, it spans most of the hero width without
+  // outgrowing the space above the footer. Letters swell into the slack.
+  const wordmark = $(".wordmark");
+  function fitWordmark() {
+    const probe = wordmark.cloneNode(true);
+    probe.removeAttribute("id");
+    Object.assign(probe.style, { position: "absolute", visibility: "hidden", fontSize: "100px", justifyContent: "flex-start", flex: "none", width: "max-content" });
+    $$("span", probe).forEach((s) => s.style.setProperty("--t", "0"));
+    hero.append(probe);
+    const per100 = probe.getBoundingClientRect().width;
+    probe.remove();
+    const byWidth = (wordmark.clientWidth * (canHover ? 0.74 : 0.56) / per100) * 100;
+    const footH = $(".hero__foot").offsetHeight;
+    const avail = innerWidth > 860 ? hero.clientHeight - footH - 72 : Infinity;
+    wordmark.style.fontSize = Math.max(48, Math.min(byWidth, avail / 0.74)) + "px";
+  }
+  fitWordmark();
+  document.fonts?.ready.then(fitWordmark);
+  let fitTimer;
+  addEventListener("resize", () => { clearTimeout(fitTimer); fitTimer = setTimeout(fitWordmark, 100); });
+
   if (reduceMotion) {
-    renderTyped(totalChars);
+    letters.forEach((el, i) => el.style.setProperty("--t", i % 3 === 0 ? "1" : "0.35"));
   } else {
-    let i = 0;
-    const tick = () => {
-      renderTyped(++i);
-      if (i < totalChars) setTimeout(tick, typed.textContent.endsWith("\n") ? 140 : 22);
-    };
-    setTimeout(tick, 500);
+    hero.addEventListener("pointermove", (e) => { if (e.pointerType === "mouse") pointer = { x: e.clientX, y: e.clientY }; });
+    hero.addEventListener("pointerleave", () => { pointer = null; });
+    requestAnimationFrame(frame);
   }
 
-  /* ---------- Reveal on scroll ---------- */
-  const io = new IntersectionObserver((entries) => {
-    for (const e of entries) {
-      if (e.isIntersecting) { e.target.classList.add("is-visible"); io.unobserve(e.target); }
+  /* =======================================================
+     01 Type scale
+     ======================================================= */
+  const scaleEl = $("#scale");
+  const sample = $("#sampleText");
+  let ratio = 1.25;
+
+  function renderScale() {
+    const text = sample.value.trim() || "Taste is trained, not innate.";
+    scaleEl.textContent = "";
+    for (let step = 6; step >= 0; step--) {
+      const px = 16 * ratio ** step;
+      const li = document.createElement("li");
+      if (step === 0) li.className = "is-body";
+      const meta = document.createElement("code");
+      meta.innerHTML = `<b>${step === 0 ? "body" : "step " + step}</b>${px.toFixed(1)}px`;
+      const span = document.createElement("span");
+      span.textContent = text;
+      span.style.fontSize = `min(${px.toFixed(2)}px, ${(px / 16 * 2.2).toFixed(2)}vw + 0.5rem)`;
+      li.append(meta, span);
+      scaleEl.append(li);
     }
-  }, { threshold: 0.12 });
-  $$(".reveal").forEach((el) => io.observe(el));
-
-  /* ---------- Design token playground ---------- */
-  const DEFAULTS = { hue: 250, radius: 14, space: 1 };
-  const hue = $("#hue"), radius = $("#radius"), space = $("#space");
-
-  function applyTokens() {
-    const h = Number(hue.value), r = Number(radius.value), s = Number(space.value);
-    root.style.setProperty("--hue", h);
-    root.style.setProperty("--radius", r + "px");
-    root.style.setProperty("--space", s);
-    $("#hueOut").value = h;
-    $("#radiusOut").value = r;
-    $("#spaceOut").value = s.toFixed(2);
-    $$(".swatches button").forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.hue) === h)));
-    $("#tokenDump").textContent =
-      `:root {\n  --hue: ${h};\n  --radius: ${r}px;\n  --space: ${s.toFixed(2)};\n` +
-      `  --accent: oklch(0.56 0.19 ${h});\n}`;
-    store.set("tokens", JSON.stringify({ hue: h, radius: r, space: s }));
   }
 
-  try {
-    const saved = JSON.parse(store.get("tokens") || "null");
-    if (saved) { hue.value = saved.hue; radius.value = saved.radius; space.value = saved.space; }
-  } catch { /* ignore malformed */ }
+  function wireRadioGroup(group, onPick) {
+    const radios = $$("[role=radio]", group);
+    const pick = (btn, focus) => {
+      radios.forEach((r) => {
+        const on = r === btn;
+        r.setAttribute("aria-checked", String(on));
+        r.tabIndex = on ? 0 : -1;
+      });
+      if (focus) btn.focus();
+      onPick(btn);
+    };
+    radios.forEach((r) => {
+      r.tabIndex = r.getAttribute("aria-checked") === "true" ? 0 : -1;
+      r.addEventListener("click", () => pick(r));
+    });
+    group.addEventListener("keydown", (e) => {
+      const dir = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+      if (!dir) return;
+      e.preventDefault();
+      const i = radios.indexOf(document.activeElement);
+      pick(radios[(i + dir + radios.length) % radios.length], true);
+    });
+  }
 
-  [hue, radius, space].forEach((el) => el.addEventListener("input", applyTokens));
-  $$(".swatches button").forEach((b) => b.addEventListener("click", () => { hue.value = b.dataset.hue; applyTokens(); }));
-  $("#resetTokens").addEventListener("click", () => {
-    hue.value = DEFAULTS.hue; radius.value = DEFAULTS.radius; space.value = DEFAULTS.space;
-    applyTokens();
+  wireRadioGroup($("#ratioGroup"), (btn) => { ratio = Number(btn.dataset.ratio); renderScale(); });
+  sample.addEventListener("input", renderScale);
+  renderScale();
+
+  /* =======================================================
+     02 Color: OKLCH ramp with live WCAG contrast
+     ======================================================= */
+  function oklchToLinearRgb(L, C, H) {
+    const h = (H * Math.PI) / 180;
+    const a = C * Math.cos(h), b = C * Math.sin(h);
+    const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+    const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+    const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+    return [
+      4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+      -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+      -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+    ];
+  }
+  const inGamut = (rgb) => rgb.every((v) => v >= -0.0005 && v <= 1.0005);
+
+  // Reduce chroma until the color fits in sRGB, so hex values and ratios are honest.
+  function toColor(L, C, H) {
+    let c = C, rgb = oklchToLinearRgb(L, c, H);
+    while (!inGamut(rgb) && c > 0) { c = Math.max(0, c - 0.004); rgb = oklchToLinearRgb(L, c, H); }
+    rgb = rgb.map((v) => Math.min(1, Math.max(0, v)));
+    const lum = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+    const hex = "#" + rgb.map((v) => {
+      const srgb = v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055;
+      return Math.round(srgb * 255).toString(16).padStart(2, "0");
+    }).join("");
+    return { hex, lum, css: `oklch(${L} ${c.toFixed(3)} ${H})` };
+  }
+  const contrast = (a, b) => (Math.max(a.lum, b.lum) + 0.05) / (Math.min(a.lum, b.lum) + 0.05);
+
+  const STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+  const LIGHTNESS = [0.97, 0.93, 0.87, 0.79, 0.71, 0.63, 0.55, 0.47, 0.39, 0.3];
+  const hueInput = $("#hue");
+  const rampEl = $("#ramp");
+
+  function renderRamp() {
+    const hue = Number(hueInput.value);
+    const page = isDark() ? toColor(0.165, 0.01, hue) : toColor(0.972, 0.005, hue);
+    const ink = isDark() ? toColor(0.95, 0.006, hue) : toColor(0.2, 0.012, hue);
+    rampEl.textContent = "";
+    STEPS.forEach((step, i) => {
+      const L = LIGHTNESS[i];
+      const C = 0.21 * Math.max(0.25, 1 - Math.abs(L - 0.62) * 1.7);
+      const col = toColor(L, C, hue);
+      const vsPage = contrast(col, page);
+      const textOn = contrast(col, ink) >= contrast(col, page) ? ink : page;
+      const grade = vsPage >= 4.5 ? "AA" : vsPage >= 3 ? "AA Large" : "Fails";
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <div class="chip-swatch" style="background:${col.hex};color:${textOn.hex}">
+          <span>${step}</span><b>Aa</b>
+        </div>
+        <dl>
+          <dt>${col.hex}</dt>
+          <dd class="${grade === "Fails" ? "fail" : "pass"}">${vsPage.toFixed(2)}:1</dd>
+          <dd>${grade}</dd>
+        </dl>`;
+      li.setAttribute("aria-label", `Step ${step}, ${col.hex}, contrast ${vsPage.toFixed(2)} to 1 against the page, ${grade}`);
+      rampEl.append(li);
+    });
+  }
+
+  function setHue(h) {
+    hueInput.value = h;
+    $("#hueOut").value = h;
+    html.style.setProperty("--hue", h);
+    store.set("hue", String(h));
+    renderRamp();
+  }
+  hueInput.addEventListener("input", () => setHue(Number(hueInput.value)));
+  $("#hueReset").addEventListener("click", () => setHue(33));
+  setHue(Number(store.get("hue") ?? 33) || 0);
+
+  /* =======================================================
+     03 Motion: easing race
+     ======================================================= */
+  let duration = 600;
+  let raced = false;
+  wireRadioGroup($("#durGroup"), (btn) => { duration = Number(btn.dataset.dur); });
+
+  $("#racePlay").addEventListener("click", (e) => {
+    const rows = $$("#race li");
+    const pucks = rows.map((li) => $(".puck", li));
+    // Snap back to the start without animating, then run.
+    pucks.forEach((p) => { p.style.transition = "none"; p.style.transform = "translateX(0)"; });
+    void document.body.offsetWidth;
+    rows.forEach((li, i) => {
+      const lane = $(".lane", li);
+      const dist = lane.clientWidth - pucks[i].offsetWidth;
+      pucks[i].style.transition = `transform ${duration}ms ${li.dataset.ease}`;
+      pucks[i].style.transform = `translateX(${dist}px)`;
+    });
+    raced = true;
+    e.currentTarget.textContent = "Run it again";
   });
-  applyTokens();
+  addEventListener("resize", () => {
+    if (!raced) return;
+    $$("#race li").forEach((li) => {
+      const p = $(".puck", li);
+      p.style.transition = "none";
+      p.style.transform = `translateX(${$(".lane", li).clientWidth - p.offsetWidth}px)`;
+    });
+  });
 
-  /* ---------- Data chart ---------- */
+  /* =======================================================
+     04 Data: deviation from the overall risk rate
+     ======================================================= */
   const data = window.CREDIT_DATA;
   const DIMS = [
-    ["Sex", "Sex"],
-    ["Age", "Age"],
-    ["Housing", "Housing"],
-    ["CheckingStatus", "Checking account"],
-    ["LoanPurpose", "Loan purpose"],
+    { key: "Sex", label: "Sex", who: (l) => (l === "Male" ? "Men" : "Women") },
+    { key: "Age", label: "Age", who: (l) => `Applicants aged ${l}` },
+    { key: "Housing", label: "Housing", who: (l) => ({ Own: "Homeowners", Rent: "Renters", Free: "Applicants housed for free" }[l] || l) },
+    { key: "CheckingStatus", label: "Checking", who: (l) => (l === "No account" ? "Applicants with no checking account" : `Applicants with ${l} in checking`) },
+    { key: "LoanPurpose", label: "Purpose", who: (l) => `${l} loans` },
   ];
-  const chart = $("#chart"), tooltip = $("#tooltip"), tabs = $("#dimTabs"), sortToggle = $("#sortToggle");
-  let currentDim = "Sex";
+  const NOTES = {
+    Sex: "Sex is a protected attribute. A model trained on this label would learn the gap unless someone audits for it first.",
+    Age: "Age is protected in many jurisdictions, so this pattern deserves the same scrutiny before any model is trained.",
+  };
+  const lowerFirst = (s) => s.charAt(0).toLowerCase() + s.slice(1);
 
   if (data) {
     const overall = data.risk / data.total;
-    $("#dataTotal").textContent = fmt.format(data.total);
+    // One shared scale across every grouping, so bar lengths compare honestly between tabs.
+    const maxDelta = Math.max(...Object.values(data.dims).flat().map((g) => Math.abs(g.risk / g.n - overall)));
+    const tabs = $("#dimTabs");
+    const chart = $("#chart");
+    let current = "Sex";
 
-    DIMS.forEach(([key, label], i) => {
+    $("#dataTotal").textContent = fmt.format(data.total);
+    $("#avgLabel").textContent = `Average ${pct(overall)}`;
+
+    DIMS.forEach((d, i) => {
       const b = document.createElement("button");
       b.type = "button";
-      b.role = "tab";
-      b.id = "tab-" + key;
-      b.textContent = label;
-      b.dataset.dim = key;
+      b.setAttribute("role", "tab");
+      b.id = "tab-" + d.key;
+      b.dataset.dim = d.key;
+      b.textContent = d.label;
+      b.setAttribute("aria-controls", "chart");
       b.setAttribute("aria-selected", String(i === 0));
       b.tabIndex = i === 0 ? 0 : -1;
       tabs.append(b);
     });
+    chart.setAttribute("role", "tabpanel");
 
     tabs.addEventListener("click", (e) => {
-      const btn = e.target.closest("button");
-      if (btn) selectDim(btn.dataset.dim);
+      const b = e.target.closest("button");
+      if (b) select(b.dataset.dim);
     });
     tabs.addEventListener("keydown", (e) => {
       const btns = $$("button", tabs);
-      const idx = btns.findIndex((b) => b.dataset.dim === currentDim);
-      const map = { ArrowRight: 1, ArrowLeft: -1, Home: -idx, End: btns.length - 1 - idx };
-      if (!(e.key in map)) return;
+      const i = btns.findIndex((b) => b.dataset.dim === current);
+      const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: btns.length - 1 }[e.key];
+      if (next === undefined) return;
       e.preventDefault();
-      const next = btns[(idx + map[e.key] + btns.length) % btns.length];
-      selectDim(next.dataset.dim);
-      next.focus();
+      const b = btns[(next + btns.length) % btns.length];
+      select(b.dataset.dim);
+      b.focus();
     });
-    sortToggle.addEventListener("change", () => drawChart());
 
-    function selectDim(dim) {
-      currentDim = dim;
+    function select(key) {
+      current = key;
       $$("button", tabs).forEach((b) => {
-        const on = b.dataset.dim === dim;
+        const on = b.dataset.dim === key;
         b.setAttribute("aria-selected", String(on));
         b.tabIndex = on ? 0 : -1;
       });
-      chart.setAttribute("aria-labelledby", "tab-" + dim);
-      drawChart();
+      chart.setAttribute("aria-labelledby", "tab-" + key);
+      draw();
     }
 
-    function drawChart() {
-      let rows = data.dims[currentDim].map((g) => ({ ...g, rate: g.risk / g.n }));
-      if (sortToggle.checked) rows.sort((a, b) => b.rate - a.rate);
-      const max = Math.max(...rows.map((r) => r.rate), overall) * 1.08;
+    function draw() {
+      const dim = DIMS.find((d) => d.key === current);
+      const rows = data.dims[current].map((g) => ({ ...g, rate: g.risk / g.n })).sort((a, b) => b.rate - a.rate);
+      const hi = rows[0], lo = rows[rows.length - 1];
+
+      $("#headline").innerHTML = "";
+      $("#headline").append(
+        `${dim.who(hi.label)} are flagged `,
+        Object.assign(document.createElement("em"), { textContent: `${(hi.rate / lo.rate).toFixed(1)}×` }),
+        ` as often as ${lowerFirst(dim.who(lo.label))}.`
+      );
 
       chart.textContent = "";
-      for (const r of rows) {
-        const row = document.createElement("div");
-        row.className = "bar-row";
-        row.tabIndex = 0;
-        row.setAttribute("aria-label", `${r.label}: ${(r.rate * 100).toFixed(1)}% flagged as risk, ${fmt.format(r.n)} applicants`);
-        row.innerHTML = `
-          <span class="bar-row__label"></span>
-          <span class="bar-track"><span class="bar-fill"></span><span class="bar-avg"></span></span>
-          <span class="bar-row__value">${(r.rate * 100).toFixed(1)}%</span>`;
-        $(".bar-row__label", row).textContent = r.label;
-        $(".bar-avg", row).style.left = (overall / max) * 100 + "%";
-        const fill = $(".bar-fill", row);
-        requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.width = (r.rate / max) * 100 + "%"; }));
+      rows.forEach((r, i) => {
+        const delta = r.rate - overall;
+        const li = document.createElement("li");
+        li.className = "dev-row" + (i === 0 ? " is-max" : "");
+        li.innerHTML = `
+          <span class="dev-row__label"></span>
+          <span class="dev-row__track"><span class="dev-row__bar ${delta >= 0 ? "is-up" : "is-down"}"></span></span>
+          <span class="dev-row__value">${pct(r.rate)}<small>n = ${fmt.format(r.n)}</small></span>`;
+        $(".dev-row__label", li).textContent = r.label;
+        li.setAttribute("aria-label",
+          `${r.label}: ${pct(r.rate)} flagged, ${Math.abs(delta * 100).toFixed(1)} points ${delta >= 0 ? "above" : "below"} average, ${fmt.format(r.n)} applicants`);
+        const bar = $(".dev-row__bar", li);
+        chart.append(li);
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          bar.style.transform = `scaleX(${(Math.abs(delta) / maxDelta).toFixed(4)})`;
+        }));
+      });
 
-        const show = () => {
-          tooltip.innerHTML = `<strong></strong><br>${fmt.format(r.risk)} of ${fmt.format(r.n)} flagged · avg loan ${fmt.format(r.avgAmount)} DM`;
-          tooltip.firstElementChild.textContent = r.label;
-          const card = chart.parentElement.getBoundingClientRect();
-          const track = $(".bar-track", row).getBoundingClientRect();
-          tooltip.style.left = track.left - card.left + Math.min(track.width * (r.rate / max), track.width - 20) + "px";
-          tooltip.style.top = track.top - card.top + "px";
-          tooltip.hidden = false;
-        };
-        const hide = () => { tooltip.hidden = true; };
-        row.addEventListener("mouseenter", show);
-        row.addEventListener("mouseleave", hide);
-        row.addEventListener("focus", show);
-        row.addEventListener("blur", hide);
-        chart.append(row);
-      }
-
-      const legend = document.createElement("div");
-      legend.className = "chart-legend";
-      legend.innerHTML = `<span><i></i>Share flagged “Risk”</span><span><i class="avg"></i>Overall average (${(overall * 100).toFixed(1)}%)</span>`;
-      chart.append(legend);
-
-      renderStats(rows, overall);
-      renderInsight(rows, overall);
+      $("#chartNote").textContent =
+        (NOTES[current] ? NOTES[current] + " " : "") +
+        "Bars share one scale across every grouping, so a short bar here really is a small gap.";
     }
 
-    function renderStats(rows, overall) {
-      const hi = rows.reduce((a, b) => (b.rate > a.rate ? b : a));
-      const lo = rows.reduce((a, b) => (b.rate < a.rate ? b : a));
-      const stats = [
-        [fmt.format(data.total), "applications"],
-        [(overall * 100).toFixed(1) + "%", "flagged overall"],
-        [(hi.rate * 100).toFixed(1) + "%", `highest · ${hi.label}`],
-        [(lo.rate * 100).toFixed(1) + "%", `lowest · ${lo.label}`],
-      ];
-      const el = $("#stats");
-      el.textContent = "";
-      for (const [value, label] of stats) {
-        const d = document.createElement("div");
-        d.className = "stat";
-        d.innerHTML = "<b></b><span></span>";
-        d.firstChild.textContent = value;
-        d.lastChild.textContent = label;
-        el.append(d);
-      }
-    }
-
-    function renderInsight(rows, overall) {
-      const hi = rows.reduce((a, b) => (b.rate > a.rate ? b : a));
-      const lo = rows.reduce((a, b) => (b.rate < a.rate ? b : a));
-      const ratio = (hi.rate / lo.rate).toFixed(1);
-      const dimLabel = DIMS.find(([k]) => k === currentDim)[1].toLowerCase();
-      const note = {
-        Sex: " Sex is a protected attribute — a gap here is exactly what a fairness audit should catch before training a model.",
-        Age: " Age is a protected attribute in many jurisdictions; a model trained on this label could inherit the pattern.",
-      }[currentDim] || "";
-      $("#insight").textContent =
-        `By ${dimLabel}, “${hi.label}” applicants are flagged ${ratio}× as often as “${lo.label}” ` +
-        `(${(hi.rate * 100).toFixed(1)}% vs ${(lo.rate * 100).toFixed(1)}%).${note}`;
-    }
-
-    selectDim(currentDim);
+    select(current);
   } else {
-    chart.textContent = "Data file not found — run scripts/build_data.py.";
+    $("#chart").textContent = "Chart data missing. Run scripts/build_data.py.";
   }
 
-  /* ---------- Toasts ---------- */
+  /* =======================================================
+     05 Interface: form
+     ======================================================= */
   function toast(message) {
     const t = document.createElement("div");
     t.className = "toast";
     t.textContent = message;
     $("#toasts").append(t);
     setTimeout(() => {
-      t.classList.add("out");
-      t.addEventListener("animationend", () => t.remove(), { once: true });
-      if (reduceMotion) t.remove();
-    }, 2600);
+      t.classList.add("is-leaving");
+      setTimeout(() => t.remove(), 200);
+    }, 3200);
   }
-  $$("[data-toast]").forEach((b) => b.addEventListener("click", () => toast(b.dataset.toast)));
 
-  $("#loadingBtn").addEventListener("click", (e) => {
-    const b = e.currentTarget;
-    b.classList.add("is-loading");
-    b.setAttribute("aria-busy", "true");
-    setTimeout(() => {
-      b.classList.remove("is-loading");
-      b.removeAttribute("aria-busy");
-      toast("Loaded!");
-    }, 1400);
-  });
-
-  /* ---------- Form validation ---------- */
   const form = $("#signup");
-  const messages = {
-    name: (el) => el.validity.valueMissing ? "Please enter your name." : el.validity.tooShort ? "Name needs at least 2 characters." : "",
-    email: (el) => el.validity.valueMissing ? "Email is required." : el.validity.typeMismatch ? "That doesn't look like an email." : "",
-    password: (el) => el.validity.valueMissing ? "Choose a password." : el.validity.tooShort ? "Use at least 8 characters." : "",
+  const MESSAGES = {
+    name: (v) => (v.valueMissing ? "Enter your name." : v.tooShort ? "Use at least 2 characters." : ""),
+    email: (v) => (v.valueMissing ? "Enter your email." : v.typeMismatch ? "This needs an @ and a domain, like ada@example.com." : ""),
+    password: (v) => (v.valueMissing ? "Choose a password." : v.tooShort ? "Use at least 8 characters." : ""),
   };
 
-  function validate(el, force) {
-    if (!force && !el.dataset.touched) return el.checkValidity();
-    const msg = messages[el.name](el);
-    const err = $(".error", el.closest(".field"));
-    err.textContent = msg;
-    el.setAttribute("aria-invalid", String(Boolean(msg)));
-    el.classList.toggle("is-valid", !msg);
+  function validate(input) {
+    const msg = MESSAGES[input.name](input.validity);
+    $("#" + input.getAttribute("aria-describedby").split(" ").pop()).textContent = msg;
+    input.setAttribute("aria-invalid", String(Boolean(msg)));
+    input.classList.toggle("is-valid", !msg);
     return !msg;
   }
 
-  function passwordStrength(pw) {
-    let score = 0;
-    if (pw.length >= 8) score++;
-    if (pw.length >= 12) score++;
-    if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
-    if (/\d/.test(pw)) score++;
-    if (/[^A-Za-z0-9]/.test(pw)) score++;
-    return score;
+  function strength(pw) {
+    let s = 0;
+    if (pw.length >= 8) s++;
+    if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) s++;
+    if (/\d/.test(pw)) s++;
+    if (/[^A-Za-z0-9]/.test(pw) && pw.length >= 10) s++;
+    return s;
   }
 
-  $$("input", form).forEach((el) => {
-    el.addEventListener("blur", () => { el.dataset.touched = "1"; validate(el); });
-    el.addEventListener("input", () => {
-      validate(el);
-      if (el.name === "password") {
-        const s = passwordStrength(el.value);
-        const colors = ["var(--danger)", "var(--danger)", "oklch(0.75 0.15 70)", "oklch(0.75 0.15 70)", "var(--success)", "var(--success)"];
-        const meter = $("#pwMeter");
-        meter.style.width = (s / 5) * 100 + "%";
-        meter.style.background = colors[s];
-      }
+  $$("input[name]:not([type=checkbox])", form).forEach((input) => {
+    input.addEventListener("blur", () => { if (input.value || input.dataset.touched) { input.dataset.touched = "1"; validate(input); } });
+    input.addEventListener("input", () => {
+      if (input.dataset.touched) validate(input);
+      if (input.name === "password") $("#meter").dataset.score = strength(input.value);
     });
   });
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
-    const inputs = $$("input", form);
-    inputs.forEach((el) => { el.dataset.touched = "1"; });
-    const ok = inputs.map((el) => validate(el, true)).every(Boolean);
-    if (!ok) {
-      inputs.find((el) => el.getAttribute("aria-invalid") === "true")?.focus();
+    const inputs = $$("input[name]:not([type=checkbox])", form);
+    inputs.forEach((i) => { i.dataset.touched = "1"; });
+    const results = inputs.map(validate);
+    if (!results.every(Boolean)) {
+      inputs[results.indexOf(false)].focus();
       return;
     }
-    toast(`Welcome aboard, ${$("input[name=name]", form).value.trim()}!`);
-    form.reset();
-    inputs.forEach((el) => { delete el.dataset.touched; el.classList.remove("is-valid"); el.removeAttribute("aria-invalid"); });
-    $("#pwMeter").style.width = "0";
+    const btn = $("#submitBtn");
+    btn.classList.add("is-loading");
+    btn.setAttribute("aria-busy", "true");
+    setTimeout(() => {
+      btn.classList.remove("is-loading");
+      btn.removeAttribute("aria-busy");
+      toast(`Account created for ${form.elements.name.value.trim()}. (Demo only, nothing was sent.)`);
+      form.reset();
+      inputs.forEach((i) => { delete i.dataset.touched; i.classList.remove("is-valid"); i.removeAttribute("aria-invalid"); });
+      $("#meter").dataset.score = 0;
+    }, 900);
+  });
+
+  /* =======================================================
+     Colophon: measure what this page actually cost to load
+     ======================================================= */
+  addEventListener("load", () => {
+    setTimeout(() => {
+      const entries = [...performance.getEntriesByType("navigation"), ...performance.getEntriesByType("resource")];
+      const size = (e) => e.transferSize || e.encodedBodySize || 0;
+      const own = entries.filter((e) => e.name.startsWith(location.origin)).reduce((n, e) => n + size(e), 0);
+      $("#weight").textContent = own
+        ? `${(own / 1024).toFixed(1)} KB of HTML, CSS, JS and data, plus Google Fonts. Measured live by this page.`
+        : "Serve the page over HTTP and this line measures its own size.";
+    }, 300);
   });
 })();

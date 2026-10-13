@@ -3,218 +3,213 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Claude Showcase</title>
-  <meta name="description" content="A lightweight, dependency-free page demonstrating development and design craft.">
+  <title>Specimen No. 01</title>
+  <meta name="description" content="A working specimen of Claude's design and front-end engineering: type, color, motion, data and interface, each one a live demo.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@50..150,100..900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
+  <div class="grid-overlay" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
 
-  <header class="nav">
-    <div class="wrap nav__inner">
-      <a class="brand" href="#top" aria-label="Home">
-        <span class="brand__mark" aria-hidden="true"></span> Showcase
-      </a>
-      <nav aria-label="Sections">
-        <ul class="nav__links">
-          <li><a href="#skills">Skills</a></li>
-          <li><a href="#playground">Design</a></li>
-          <li><a href="#data">Data</a></li>
-          <li><a href="#components">Components</a></li>
-        </ul>
-      </nav>
-      <button class="icon-btn" id="themeToggle" type="button" aria-label="Toggle dark mode">
-        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-        <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
-      </button>
+  <header class="bar">
+    <a class="bar__mark" href="#top">Claude <span>/ Specimen No.&nbsp;01</span></a>
+    <nav aria-label="Sections">
+      <ol class="bar__index">
+        <li><a href="#type"><b>01</b> Type</a></li>
+        <li><a href="#color"><b>02</b> Color</a></li>
+        <li><a href="#motion"><b>03</b> Motion</a></li>
+        <li><a href="#data"><b>04</b> Data</a></li>
+        <li><a href="#interface"><b>05</b> Interface</a></li>
+      </ol>
+    </nav>
+    <div class="bar__tools">
+      <button type="button" class="chip" id="gridToggle" aria-pressed="false" title="Toggle layout grid (G)">Grid <kbd>G</kbd></button>
+      <button type="button" class="chip" id="themeToggle" aria-pressed="false">Dark</button>
     </div>
   </header>
 
   <main id="main">
-    <!-- Hero -->
-    <section class="hero wrap" id="top">
-      <div class="hero__copy reveal">
-        <p class="eyebrow">Development × Design</p>
-        <h1>One page, no frameworks, <span class="accent">built to show the craft.</span></h1>
-        <p class="lead">Everything here — the live theme engine, the data chart drawn from this repo's 5,000-row dataset, and the accessible components — is hand-written HTML, CSS and vanilla JavaScript. Under 50&nbsp;KB.</p>
-        <div class="hero__cta">
-          <a class="btn btn--primary" href="#playground">Try the design playground</a>
-          <a class="btn btn--ghost" href="#data">Explore the data</a>
+    <!-- 00 Hero -->
+    <section class="hero" id="top" aria-labelledby="heroTitle">
+      <h1 class="wordmark" id="heroTitle" aria-label="Specimen">
+        <span aria-hidden="true">S</span><span aria-hidden="true">P</span><span aria-hidden="true">E</span><span aria-hidden="true">C</span><span aria-hidden="true">I</span><span aria-hidden="true">M</span><span aria-hidden="true">E</span><span aria-hidden="true">N</span>
+      </h1>
+      <div class="hero__foot">
+        <p class="hero__lede">A working sample of what I can design and build. Nothing on this page is a screenshot or a claim. Every section is live code you can poke at.</p>
+        <dl class="hero__spec">
+          <div><dt>Display</dt><dd>Anybody, variable wdth 50–150, wght 100–900</dd></div>
+          <div><dt>Built with</dt><dd>HTML, CSS, vanilla JS. Zero dependencies.</dd></div>
+          <div><dt>Try</dt><dd class="hint-pointer">Move your cursor across the letters.</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- 01 Type -->
+    <section class="sec" id="type" aria-labelledby="typeTitle">
+      <div class="sec__meta">
+        <span class="sec__num" aria-hidden="true">01</span>
+        <h2 id="typeTitle">Type</h2>
+        <p>Hierarchy comes from a ratio, not from guessing sizes. Pick one and the whole scale recalculates.</p>
+      </div>
+      <div class="sec__body">
+        <div class="controls">
+          <div class="seg" role="radiogroup" aria-label="Scale ratio" id="ratioGroup">
+            <button type="button" role="radio" data-ratio="1.2" aria-checked="false">1.200 <small>Minor third</small></button>
+            <button type="button" role="radio" data-ratio="1.25" aria-checked="true">1.250 <small>Major third</small></button>
+            <button type="button" role="radio" data-ratio="1.333" aria-checked="false">1.333 <small>Fourth</small></button>
+            <button type="button" role="radio" data-ratio="1.618" aria-checked="false">1.618 <small>Golden</small></button>
+          </div>
+          <label class="text-field">
+            <span>Sample text</span>
+            <input type="text" id="sampleText" value="Taste is trained, not innate." maxlength="60">
+          </label>
+        </div>
+        <ol class="scale" id="scale"></ol>
+      </div>
+    </section>
+
+    <!-- 02 Color -->
+    <section class="sec" id="color" aria-labelledby="colorTitle">
+      <div class="sec__meta">
+        <span class="sec__num" aria-hidden="true">02</span>
+        <h2 id="colorTitle">Color</h2>
+        <p>One hue in OKLCH becomes a ten-step ramp. Contrast is computed live against the page, so every pairing is checked, not eyeballed. The hue also repaints this whole page.</p>
+      </div>
+      <div class="sec__body">
+        <div class="controls">
+          <label class="range">
+            <span>Hue <output id="hueOut">33</output>°</span>
+            <input type="range" id="hue" min="0" max="359" value="33">
+          </label>
+          <button type="button" class="chip" id="hueReset">Reset to signal red</button>
+        </div>
+        <ol class="ramp" id="ramp"></ol>
+        <p class="footnote">Ratios use the WCAG 2 luminance formula after an OKLCH to sRGB conversion. <b>AA</b> means 4.5:1 or better for body text, <b>AA Large</b> means 3:1 for 24px and up.</p>
+      </div>
+    </section>
+
+    <!-- 03 Motion -->
+    <section class="sec" id="motion" aria-labelledby="motionTitle">
+      <div class="sec__meta">
+        <span class="sec__num" aria-hidden="true">03</span>
+        <h2 id="motionTitle">Motion</h2>
+        <p>Same distance, same duration, three curves. Ease-out does most of its moving up front, which is why interfaces that use it feel quick to respond.</p>
+      </div>
+      <div class="sec__body">
+        <div class="controls">
+          <button type="button" class="btn" id="racePlay">Run the race</button>
+          <div class="seg" role="radiogroup" aria-label="Duration" id="durGroup">
+            <button type="button" role="radio" data-dur="200" aria-checked="false">200ms</button>
+            <button type="button" role="radio" data-dur="600" aria-checked="true">600ms</button>
+            <button type="button" role="radio" data-dur="1500" aria-checked="false">1500ms</button>
+          </div>
+        </div>
+        <ul class="race" id="race">
+          <li data-ease="linear">
+            <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M2 38 L38 2"/></svg>
+            <code>linear</code>
+            <span class="lane"><span class="puck"></span></span>
+          </li>
+          <li data-ease="cubic-bezier(0.55, 0, 1, 0.45)">
+            <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M2 38 C21.8 38 38 20 38 2"/></svg>
+            <code>ease-in</code>
+            <span class="lane"><span class="puck"></span></span>
+          </li>
+          <li data-ease="cubic-bezier(0.23, 1, 0.32, 1)" class="is-pick">
+            <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M2 38 C10.3 2 13.5 2 38 2"/></svg>
+            <code>cubic-bezier(.23, 1, .32, 1)</code>
+            <span class="lane"><span class="puck"></span></span>
+          </li>
+        </ul>
+        <div class="press-demo">
+          <button type="button" class="press" id="pressBtn"><span>Press and hold</span></button>
+          <p>The button scales to 0.97 on press and springs back on release. Feedback you feel more than see.</p>
         </div>
       </div>
-      <div class="code-card reveal" aria-label="Animated code sample">
-        <div class="code-card__bar"><i></i><i></i><i></i><span>tokens.css</span></div>
-        <pre><code id="typed"></code><span class="caret" aria-hidden="true"></span></pre>
-      </div>
     </section>
 
-    <!-- Skills -->
-    <section class="section wrap" id="skills">
-      <header class="section__head reveal">
-        <p class="eyebrow">What I can do</p>
-        <h2>Abilities, demonstrated on this page</h2>
-      </header>
-      <div class="grid grid--4">
-        <article class="card skill reveal">
-          <div class="skill__icon" aria-hidden="true">&lt;/&gt;</div>
-          <h3>Front-end engineering</h3>
-          <p>Semantic HTML, modern CSS (custom properties, grid, <code>clamp()</code>), and dependency-free JavaScript.</p>
-          <ul class="tags"><li>HTML</li><li>CSS</li><li>JS</li><li>React</li></ul>
-        </article>
-        <article class="card skill reveal">
-          <div class="skill__icon" aria-hidden="true">Aa</div>
-          <h3>Visual design</h3>
-          <p>Design tokens, typographic scale, spacing rhythm, and a coherent light/dark theme from one hue.</p>
-          <ul class="tags"><li>Tokens</li><li>Type</li><li>Color</li></ul>
-        </article>
-        <article class="card skill reveal">
-          <div class="skill__icon" aria-hidden="true">▤</div>
-          <h3>Data &amp; visualization</h3>
-          <p>A Python build step aggregates the raw CSV; the chart is drawn as plain SVG with tooltips and sorting.</p>
-          <ul class="tags"><li>Python</li><li>SVG</li><li>Analysis</li></ul>
-        </article>
-        <article class="card skill reveal">
-          <div class="skill__icon" aria-hidden="true">♿</div>
-          <h3>Accessibility</h3>
-          <p>Keyboard navigation, ARIA tabs and switches, visible focus, live regions and reduced-motion support.</p>
-          <ul class="tags"><li>WCAG</li><li>ARIA</li><li>a11y</li></ul>
-        </article>
+    <!-- 04 Data -->
+    <section class="sec" id="data" aria-labelledby="dataTitle">
+      <div class="sec__meta">
+        <span class="sec__num" aria-hidden="true">04</span>
+        <h2 id="dataTitle">Data</h2>
+        <p>The CSV sitting in this repository: <span id="dataTotal">5,000</span> loan applications labelled “Risk” or “No Risk”. Each bar shows how far a group sits from the overall rate.</p>
       </div>
-    </section>
-
-    <!-- Playground -->
-    <section class="section wrap" id="playground">
-      <header class="section__head reveal">
-        <p class="eyebrow">Live design system</p>
-        <h2>Change one token, restyle everything</h2>
-        <p class="muted">These controls rewrite CSS custom properties on the page root. Every button, card and chart on the page follows.</p>
-      </header>
-      <div class="playground card reveal">
-        <form class="controls" id="tokenForm">
-          <label class="field">
-            <span>Accent hue <output id="hueOut">250</output>°</span>
-            <input type="range" id="hue" min="0" max="360" value="250">
-          </label>
-          <label class="field">
-            <span>Corner radius <output id="radiusOut">14</output>px</span>
-            <input type="range" id="radius" min="0" max="28" value="14">
-          </label>
-          <label class="field">
-            <span>Spacing scale <output id="spaceOut">1.00</output>×</span>
-            <input type="range" id="space" min="0.75" max="1.35" step="0.05" value="1">
-          </label>
-          <div class="swatches" role="group" aria-label="Preset palettes">
-            <button type="button" data-hue="250" style="--h:250" aria-label="Indigo"></button>
-            <button type="button" data-hue="160" style="--h:160" aria-label="Emerald"></button>
-            <button type="button" data-hue="25" style="--h:25" aria-label="Coral"></button>
-            <button type="button" data-hue="300" style="--h:300" aria-label="Orchid"></button>
-            <button type="button" data-hue="45" style="--h:45" aria-label="Amber"></button>
+      <div class="sec__body">
+        <p class="headline" id="headline" aria-live="polite"></p>
+        <div class="controls">
+          <div class="seg" role="tablist" aria-label="Group applicants by" id="dimTabs"></div>
+        </div>
+        <figure class="dev-chart">
+          <div class="dev-chart__axis" aria-hidden="true">
+            <span>Below average</span><span id="avgLabel">Average</span><span>Above average</span>
           </div>
-          <button type="button" class="btn btn--ghost btn--sm" id="resetTokens">Reset</button>
+          <ol class="dev-chart__rows" id="chart"></ol>
+          <figcaption class="footnote" id="chartNote"></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- 05 Interface -->
+    <section class="sec" id="interface" aria-labelledby="ifaceTitle">
+      <div class="sec__meta">
+        <span class="sec__num" aria-hidden="true">05</span>
+        <h2 id="ifaceTitle">Interface</h2>
+        <p>A component is not done until every state is designed. Here is one button in all of them, then a form that uses them for real.</p>
+      </div>
+      <div class="sec__body">
+        <ul class="states" aria-label="Button states">
+          <li><span class="btn" aria-hidden="true">Save changes</span><code>default</code></li>
+          <li><span class="btn is-hover" aria-hidden="true">Save changes</span><code>hover</code></li>
+          <li><span class="btn is-focus" aria-hidden="true">Save changes</span><code>focus-visible</code></li>
+          <li><span class="btn is-active" aria-hidden="true">Save changes</span><code>active</code></li>
+          <li><span class="btn is-disabled" aria-hidden="true">Save changes</span><code>disabled</code></li>
+          <li><span class="btn is-loading" aria-hidden="true">Save changes</span><code>loading</code></li>
+        </ul>
+
+        <form class="form" id="signup" novalidate>
+          <div class="field">
+            <label for="f-name">Name</label>
+            <input id="f-name" type="text" name="name" required minlength="2" autocomplete="name" aria-describedby="e-name">
+            <small class="error" id="e-name"></small>
+          </div>
+          <div class="field">
+            <label for="f-email">Email</label>
+            <input id="f-email" type="email" name="email" required autocomplete="email" aria-describedby="e-email">
+            <small class="error" id="e-email"></small>
+          </div>
+          <div class="field field--wide">
+            <label for="f-pw">Password</label>
+            <input id="f-pw" type="password" name="password" required minlength="8" autocomplete="new-password" aria-describedby="pw-hint e-pw">
+            <div class="meter" id="meter" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+            <small class="hint" id="pw-hint">8 characters minimum. Mix cases, digits and symbols to fill the meter.</small>
+            <small class="error" id="e-pw"></small>
+          </div>
+          <label class="toggle field--wide">
+            <input type="checkbox" role="switch" name="updates">
+            <span class="toggle__track" aria-hidden="true"></span>
+            Send me the occasional update
+          </label>
+          <button class="btn field--wide" type="submit" id="submitBtn">Create account</button>
         </form>
-        <div class="preview">
-          <div class="mini-card">
-            <div class="mini-card__head">
-              <div class="avatar" aria-hidden="true">AI</div>
-              <div><strong>Project status</strong><span class="muted small">Updated just now</span></div>
-              <span class="badge">On track</span>
-            </div>
-            <div class="progress" role="progressbar" aria-valuenow="72" aria-valuemin="0" aria-valuemax="100" aria-label="Progress"><span style="width:72%"></span></div>
-            <div class="mini-card__foot">
-              <button type="button" class="btn btn--primary btn--sm">Approve</button>
-              <button type="button" class="btn btn--ghost btn--sm">Details</button>
-            </div>
-          </div>
-          <pre class="token-dump" aria-label="Generated CSS"><code id="tokenDump"></code></pre>
-        </div>
-      </div>
-    </section>
-
-    <!-- Data -->
-    <section class="section wrap" id="data">
-      <header class="section__head reveal">
-        <p class="eyebrow">Data story</p>
-        <h2>Who gets flagged as a credit risk?</h2>
-        <p class="muted">Built from <code>german_credit_data_biased_training.csv</code> in this repository — <span id="dataTotal">5,000</span> loan applications. Switch the dimension to see how the “Risk” label is distributed.</p>
-      </header>
-      <div class="card chart-card reveal">
-        <div class="chart-toolbar">
-          <div class="tabs" role="tablist" aria-label="Group applicants by" id="dimTabs"></div>
-          <label class="switch">
-            <input type="checkbox" id="sortToggle" role="switch">
-            <span class="switch__track" aria-hidden="true"></span>
-            Sort by risk
-          </label>
-        </div>
-        <div class="stats" id="stats"></div>
-        <div class="chart" id="chart" role="img" aria-live="polite"></div>
-        <p class="insight" id="insight"></p>
-        <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
-      </div>
-    </section>
-
-    <!-- Components -->
-    <section class="section wrap" id="components">
-      <header class="section__head reveal">
-        <p class="eyebrow">Component gallery</p>
-        <h2>Interactive, accessible building blocks</h2>
-      </header>
-      <div class="grid grid--2">
-        <form class="card form reveal" id="signup" novalidate>
-          <h3>Form with live validation</h3>
-          <label class="field">
-            <span>Name</span>
-            <input type="text" name="name" required minlength="2" autocomplete="name" placeholder="Ada Lovelace">
-            <small class="error" aria-live="polite"></small>
-          </label>
-          <label class="field">
-            <span>Email</span>
-            <input type="email" name="email" required autocomplete="email" placeholder="ada@example.com">
-            <small class="error" aria-live="polite"></small>
-          </label>
-          <label class="field">
-            <span>Password</span>
-            <input type="password" name="password" required minlength="8" autocomplete="new-password" placeholder="At least 8 characters">
-            <div class="meter" aria-hidden="true"><span id="pwMeter"></span></div>
-            <small class="error" aria-live="polite"></small>
-          </label>
-          <button class="btn btn--primary" type="submit">Create account</button>
-        </form>
-
-        <div class="card reveal stack">
-          <h3>Buttons &amp; states</h3>
-          <div class="row">
-            <button class="btn btn--primary" type="button" data-toast="Saved successfully">Primary</button>
-            <button class="btn btn--ghost" type="button" data-toast="Secondary action">Ghost</button>
-            <button class="btn btn--primary" type="button" disabled>Disabled</button>
-            <button class="btn btn--primary" type="button" id="loadingBtn">Load</button>
-          </div>
-          <h3>Accordion</h3>
-          <details class="accordion" open>
-            <summary>Why no framework?</summary>
-            <p>For a page this size, the platform is enough. Less code means faster loads and fewer moving parts.</p>
-          </details>
-          <details class="accordion">
-            <summary>Does it work on phones?</summary>
-            <p>Yes — fluid type and grid layouts adapt from 320&nbsp;px up, with no horizontal scrolling.</p>
-          </details>
-          <details class="accordion">
-            <summary>Is it accessible?</summary>
-            <p>Every control is reachable by keyboard, labelled for screen readers, and motion respects your OS setting.</p>
-          </details>
-        </div>
       </div>
     </section>
   </main>
 
-  <footer class="footer wrap">
-    <p>Hand-crafted with HTML, CSS &amp; vanilla JS · No build tools required.</p>
+  <footer class="colophon">
+    <h2>Colophon</h2>
+    <dl>
+      <div><dt>Type</dt><dd>Anybody (display), IBM Plex Sans (text), IBM Plex Mono (data)</dd></div>
+      <div><dt>Color</dt><dd>OKLCH, one accent hue, neutrals tinted toward it</dd></div>
+      <div><dt>Weight</dt><dd id="weight">Measuring…</dd></div>
+      <div><dt>Source</dt><dd>Hand-written and unminified. Open dev tools and read it.</dd></div>
+    </dl>
   </footer>
 
-  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
 
   <script src="data.js"></script>
   <script src="app.js"></script>

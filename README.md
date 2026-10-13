@@ -2,13 +2,16 @@
 
 ## Showcase site (`site/`)
 
-A lightweight, dependency-free one-page site demonstrating front-end development and design:
+*Specimen No. 01*: a one-page type-specimen-style site where every section is a live demo of a design or engineering skill.
 
-- **Live design system** — sliders rewrite CSS custom properties (hue, radius, spacing); the whole page restyles, in light and dark mode.
-- **Data story** — an interactive chart of `german_credit_data_biased_training.csv`, showing how the "Risk" label varies by sex, age, housing, checking account and loan purpose.
-- **Accessible components** — keyboard-navigable tabs, switch, form with live validation and password meter, accordion, toasts, loading button.
+- **Wordmark**: a variable font (Anybody) whose letters swell in weight and width toward the cursor.
+- **01 Type**: a modular type scale that recalculates from the ratio you pick.
+- **02 Color**: one OKLCH hue becomes a ten-step ramp with WCAG contrast computed live; the hue repaints the whole page.
+- **03 Motion**: an easing race comparing linear, ease-in and a custom ease-out curve.
+- **04 Data**: deviation chart of `german_credit_data_biased_training.csv`, showing how the "Risk" label varies by sex, age, housing, checking account and loan purpose.
+- **05 Interface**: one button drawn in every state, and an accessible form with validation and a strength meter.
 
-Plain HTML, CSS and vanilla JS — under 50 KB, no build tools.
+Press **G** to overlay the 12-column layout grid. Plain HTML, CSS and vanilla JS, no build tools.
 
 ### Run it
 
